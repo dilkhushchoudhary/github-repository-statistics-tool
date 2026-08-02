@@ -40,7 +40,7 @@ No build step, no `npm install`, no server required.
 ![Profile & Statistics](screenshots/profile-statistics.png)
 
 ### Top Repositories
-![Top Repositories](screenshots/profile-statistics.png)
+![Top Repositories](screenshots/error-state.png)
 
 ## Folder Structure
 github-stats/

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>gh-stats — GitHub Repository Statistics Tool</title>
+  <meta name="description" content="Look up any GitHub username and instantly see their profile, repository statistics, and top starred repositories. Free, browser-based, no sign-up required." />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="author" content="Dilkhush Choudhary" />
+
+  <!-- Open Graph (Facebook, LinkedIn, Discord, etc.) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="gh-stats — GitHub Repository Statistics Tool" />
+  <meta property="og:description" content="Look up any GitHub username and instantly see their profile, repository statistics, and top starred repositories." />
+  <!-- Update og:url to your deployed URL once published -->
+  <meta property="og:url" content="https://github.com/" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="gh-stats — GitHub Repository Statistics Tool" />
+  <meta name="twitter:description" content="Look up any GitHub username and instantly see their profile, repository statistics, and top starred repositories." />
+
+  <!-- Google Fonts: JetBrains Mono for that "terminal / code" feel, Inter for readable body text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg class="brand-icon" width="22" height="22" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07
+            -1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82
+            .64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12
+            .51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48
+            0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+        </svg>
+        <span class="brand-text">gh-stats</span>
+      </div>
+
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle light and dark theme" aria-pressed="false" title="Toggle theme">
+        <!-- Sun / moon icons swapped via CSS based on data-theme -->
+        <svg class="icon icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg class="icon icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== HERO / SEARCH (terminal style) ===================== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <p class="hero-eyebrow">// GitHub Repository Statistics Tool</p>
+      <h1 class="hero-title">Point it at a username. Get the receipts.</h1>
+      <p class="hero-sub">Profile, stats, top repos and language breakdown — pulled straight from the GitHub REST API.</p>
+
+      <form id="searchForm" class="terminal-bar" autocomplete="off">
+        <span class="terminal-prompt" aria-hidden="true">$</span>
+        <span class="terminal-cmd" aria-hidden="true">gh-stats&nbsp;--user</span>
+        <input
+          type="text"
+          id="usernameInput"
+          class="terminal-input"
+          placeholder="octocat"
+          aria-label="GitHub username"
+          spellcheck="false"
+        />
+        <button type="submit" class="terminal-run" id="searchBtn">
+          <span class="btn-label">run</span>
+        </button>
+      </form>
+
+      <!-- Recently searched usernames (clickable chips) -->
+      <div id="historyRow" class="history-row" hidden>
+        <span class="history-label">recent:</span>
+        <div id="historyChips" class="history-chips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MAIN CONTENT ===================== -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Loading state -->
+    <div id="loadingState" class="state-panel loading-panel" role="status" aria-live="polite" hidden>
+      <div class="spinner" aria-hidden="true">
+        <span class="spinner-ring"></span>
+        <span class="spinner-glyph">&lt;/&gt;</span>
+      </div>
+      <p class="loading-text">fetching data<span class="dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></p>
+    </div>
+
+    <!-- Error state -->
+    <div id="errorState" class="state-panel error-panel" role="alert" aria-live="assertive" hidden>
+      <div class="error-card">
+        <div class="error-icon" aria-hidden="true">!</div>
+        <h3 id="errorTitle" class="error-title">Something went wrong</h3>
+        <p id="errorMessage" class="error-message">Please try again.</p>
+      </div>
+    </div>
+
+    <!-- Empty / initial state -->
+    <div id="emptyState" class="state-panel empty-panel" role="status">
+      <div class="empty-card">
+        <div class="empty-glyph" aria-hidden="true">{ }</div>
+        <p class="empty-text">No data yet — search a GitHub username to begin.</p>
+      </div>
+    </div>
+
+    <!-- Results wrapper (profile + stats) -->
+    <div id="resultsWrapper" class="results-wrapper" hidden>
+
+      <!-- ============= PROFILE CARD ============= -->
+      <section class="profile-section" id="profileSection" aria-label="Profile overview">
+        <div class="profile-card">
+          <div class="profile-top">
+            <img id="avatarImg" class="avatar" alt="User avatar" width="120" height="120" loading="lazy" decoding="async" />
+
+            <div class="profile-heading">
+              <h2 id="profileName" class="profile-name">—</h2>
+              <a id="profileUsername" class="profile-username" href="https://github.com" target="_blank" rel="noopener noreferrer">@username</a>
+              <p id="profileBio" class="profile-bio"></p>
+
+              <div class="profile-actions">
+                <a id="viewProfileBtn" class="btn btn-primary" href="https://github.com" target="_blank" rel="noopener noreferrer">
+                  View GitHub Profile
+                </a>
+                <button id="copyLinkBtn" class="btn btn-ghost" type="button">Copy Link</button>
+                <button id="shareBtn" class="btn btn-ghost" type="button">Share</button>
+              </div>
+            </div>
+          </div>
+
+          <ul class="profile-meta-list">
+            <li class="meta-item" id="metaCompany" hidden>
+              <span class="meta-icon" aria-hidden="true">🏢</span><span class="meta-text"></span>
+            </li>
+            <li class="meta-item" id="metaLocation" hidden>
+              <span class="meta-icon" aria-hidden="true">📍</span><span class="meta-text"></span>
+            </li>
+            <li class="meta-item" id="metaBlog" hidden>
+              <span class="meta-icon" aria-hidden="true">🔗</span><a class="meta-text meta-link" href="https://github.com" target="_blank" rel="noopener noreferrer"></a>
+            </li>
+            <li class="meta-item" id="metaJoined">
+              <span class="meta-icon" aria-hidden="true">📅</span><span class="meta-text"></span>
+            </li>
+          </ul>
+
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <span id="followersCount" class="profile-stat-num">0</span>
+              <span class="profile-stat-label">Followers</span>
+            </div>
+            <div class="profile-stat">
+              <span id="followingCount" class="profile-stat-num">0</span>
+              <span class="profile-stat-label">Following</span>
+            </div>
+            <div class="profile-stat">
+              <span id="publicReposCount" class="profile-stat-num">0</span>
+              <span class="profile-stat-label">Public Repos</span>
+            </div>
+            <div class="profile-stat">
+              <span id="publicGistsCount" class="profile-stat-num">0</span>
+              <span class="profile-stat-label">Public Gists</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= STATISTICS ============= -->
+      <section class="stats-section" id="statsSection" aria-label="Repository statistics">
+        <h3 class="section-title"><span class="section-index">01</span> Statistics</h3>
+
+        <div class="stats-grid">
+          <div class="stat-card" style="--accent: var(--clr-accent-blue)">
+            <span class="stat-glyph" aria-hidden="true">📦</span>
+            <span class="stat-value" id="statTotalRepos" data-target="0">0</span>
+            <span class="stat-label">Total Repositories</span>
+          </div>
+          <div class="stat-card" style="--accent: var(--clr-accent-yellow)">
+            <span class="stat-glyph" aria-hidden="true">⭐</span>
+            <span class="stat-value" id="statTotalStars" data-target="0">0</span>
+            <span class="stat-label">Total Stars</span>
+          </div>
+          <div class="stat-card" style="--accent: var(--clr-accent-purple)">
+            <span class="stat-glyph" aria-hidden="true">🍴</span>
+            <span class="stat-value" id="statTotalForks" data-target="0">0</span>
+            <span class="stat-label">Total Forks</span>
+          </div>
+          <div class="stat-card" style="--accent: var(--clr-accent-green)">
+            <span class="stat-glyph" aria-hidden="true">👁️</span>
+            <span class="stat-value" id="statTotalWatchers" data-target="0">0</span>
+            <span class="stat-label">Total Watchers</span>
+          </div>
+          <div class="stat-card" style="--accent: var(--clr-accent-red)">
+            <span class="stat-glyph" aria-hidden="true">🐞</span>
+            <span class="stat-value" id="statTotalIssues" data-target="0">0</span>
+            <span class="stat-label">Open Issues</span>
+          </div>
+          <div class="stat-card" style="--accent: var(--clr-accent-orange)">
+            <span class="stat-glyph" aria-hidden="true">✨</span>
+            <span class="stat-value" id="statAvgStars" data-target="0">0</span>
+            <span class="stat-label">Avg Stars / Repo</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============= TOP REPOSITORIES ============= -->
+      <section class="top-repos-section" id="topReposSection" aria-label="Top repositories">
+        <h3 class="section-title"><span class="section-index">02</span> Top Repositories</h3>
+
+        <!-- Populated by script.js with the top 5 repos sorted by stars -->
+        <div class="repo-grid" id="topReposGrid"></div>
+      </section>
+
+    </div><!-- /resultsWrapper -->
+  </main>
+
+  <!-- Back to top button -->
+  <button id="backToTop" class="back-to-top" aria-label="Back to top" hidden>↑</button>
+
+  <footer class="site-footer">
+    <p>Built with HTML, CSS &amp; Vanilla JavaScript • Developed by Dilkhush Choudhary</p>
+    <p class="footer-sub">Data via the GitHub REST API</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
